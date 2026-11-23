@@ -19,7 +19,16 @@ export default function ObjetosPerdidos({ usuario }) {
     setObjetos(data || [])
   }
 
-  useEffect(() => { cargarObjetos() }, [idUsuario])
+  useEffect(() => {
+    if (!idUsuario) return
+    cargarObjetos()
+    // Se actualiza solo cuando el supervisor elimina o cambia un objeto
+    const canal = supabase.channel(`vig-objetos-${idUsuario}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'objetos_perdidos' }, () => cargarObjetos())
+      .subscribe()
+    const t = setInterval(cargarObjetos, 15000)
+    return () => { clearInterval(t); supabase.removeChannel(canal) }
+  }, [idUsuario])
 
   const handleSubmit = async (e) => {
     e.preventDefault()

@@ -47,21 +47,33 @@ function App() {
   const [subSeccionVigilante, setSubSeccionVigilante] = useState('rondas')
   const [subSeccionSupervisor, setSubSeccionSupervisor] = useState('resumen')
   const [subSeccionAdmin, setSubSeccionAdmin] = useState('administracion')
+  const [menuAbierto, setMenuAbierto] = useState(false) // menú lateral en móvil
 
   useEffect(() => {
     try {
-      const savedUser = localStorage.getItem('centralguard_user')
+      localStorage.removeItem('centralguard_user') // sesión antigua guardada por versiones anteriores
+      const savedUser = sessionStorage.getItem('centralguard_user')
       if (savedUser) setUsuarioLogueado(JSON.parse(savedUser))
     } catch {
-      localStorage.removeItem('centralguard_user')
+      sessionStorage.removeItem('centralguard_user')
     }
   }, [])
+
+  // Aplica el tema de color según el rol (ver src/roles-theme.css)
+  useEffect(() => {
+    if (usuarioLogueado) {
+      document.body.dataset.role = normalizeRole(usuarioLogueado.rol)
+    } else {
+      delete document.body.dataset.role
+    }
+    return () => { delete document.body.dataset.role }
+  }, [usuarioLogueado])
 
   const scrollToSection = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
 
   const guardarSesion = (userData) => {
     setUsuarioLogueado(userData)
-    localStorage.setItem('centralguard_user', JSON.stringify(userData))
+    sessionStorage.setItem('centralguard_user', JSON.stringify(userData))
     setMostrarModalLogin(false)
     Swal.fire({
       title: `¡Bienvenido, ${userData.nombre}!`,
@@ -231,7 +243,7 @@ function App() {
   if (!r.isConfirmed) return
 
   setUsuarioLogueado(null)
-  localStorage.removeItem('centralguard_user')
+  sessionStorage.removeItem('centralguard_user')
   setEmailInput('')
   setPasswordInput('')
 }
@@ -239,8 +251,8 @@ function App() {
   if (usuarioLogueado) {
     const rol = normalizeRole(usuarioLogueado.rol)
     return (
-      <div className="dashboard-shell">
-        <aside className="sidebar">
+      <div className={`dashboard-shell role-${rol}`}>
+        <aside className={`sidebar ${menuAbierto ? 'open' : ''}`}>
           <div className="brand">
             <img src={logoCentral} alt="CentralGuard" style={{ height: '36px' }} />
             <div><strong>CentralGuard</strong><small>Seguridad inteligente</small></div>
@@ -251,7 +263,7 @@ function App() {
             <div><strong>{usuarioLogueado.nombre}</strong><small>{rol === 'admin' ? 'Administrador' : rol === 'supervisor' ? 'Supervisor' : 'Vigilante'}</small></div>
           </div>
 
-          <nav className="side-nav">
+          <nav className="side-nav" onClick={() => setMenuAbierto(false)}>
             {rol === 'vigilante' && <>
               <button className={subSeccionVigilante==='rondas'?'active':''} onClick={()=>setSubSeccionVigilante('rondas')}><i className="bi bi-journal-bookmark me-2"></i><span>Libro de Rondas</span></button>
               <button className={subSeccionVigilante==='accesos'?'active':''} onClick={()=>setSubSeccionVigilante('accesos')}><i className="bi bi-car-front me-2"></i><span>Control de Accesos</span></button>
@@ -270,6 +282,7 @@ function App() {
               <button className={subSeccionSupervisor==='activos'?'active':''} onClick={()=>setSubSeccionSupervisor('activos')}><i className="bi bi-tools me-2"></i><span>Gestión de activos</span></button>
               <button className={subSeccionSupervisor==='objetos'?'active':''} onClick={()=>setSubSeccionSupervisor('objetos')}><i className="bi bi-box-seam me-2"></i><span>Objetos perdidos</span></button>
               <button className={subSeccionSupervisor==='pedidos'?'active':''} onClick={()=>setSubSeccionSupervisor('pedidos')}><i className="bi bi-bag-check me-2"></i><span>Pedidos y deliveries</span></button>
+              <button className={subSeccionSupervisor==='vehiculos'?'active':''} onClick={()=>setSubSeccionSupervisor('vehiculos')}><i className="bi bi-car-front me-2"></i><span>Vehículos de visitantes</span></button>
             </>}
             {rol === 'admin' && <>
               <button className={subSeccionAdmin==='administracion'?'active':''} onClick={()=>setSubSeccionAdmin('administracion')}><i className="bi bi-gear-fill me-2"></i><span>Administración</span></button>
@@ -282,12 +295,16 @@ function App() {
 
         <section className="dashboard-main">
           <header className="topbar">
-            <div><span className="topbar-label">CentralGuard / {rol.toUpperCase()}</span><h2>{rol === 'admin' ? 'Administración' : rol === 'supervisor' ? 'Supervisión operativa' : 'Operación de vigilancia'}</h2></div>
-            <div className="system-status"><span></span> Sistema operativo</div>
+            <button type="button" className="menu-toggle" onClick={() => setMenuAbierto(o => !o)} aria-label="Abrir o cerrar menú" aria-expanded={menuAbierto}>
+              <i className={`bi ${menuAbierto ? 'bi-x-lg' : 'bi-list'}`}></i>
+            </button>
+            <div className="topbar-title"><span className="topbar-label">CentralGuard / {rol.toUpperCase()}</span><h2>{rol === 'admin' ? 'Administración' : rol === 'supervisor' ? 'Supervisión operativa' : 'Operación de vigilancia'}</h2></div>
+            <div className="system-status"><span></span> <em>Sistema operativo</em></div>
           </header>
+          {menuAbierto && <div className="sidebar-backdrop" onClick={() => setMenuAbierto(false)}></div>}
 
           <main className="dashboard-content">
-            {rol === 'admin' && (subSeccionAdmin === 'validacion' ? <ValidacionRegistros /> : <AdminPanel />)}
+            {rol === 'admin' && (subSeccionAdmin === 'validacion' ? <ValidacionRegistros /> : <AdminPanel usuario={usuarioLogueado} />)}
             {rol === 'supervisor' && <SupervisorPanel usuario={usuarioLogueado} seccionActiva={subSeccionSupervisor} onCambiarSeccion={setSubSeccionSupervisor} />}
             {rol === 'vigilante' && (
               <div className="panel-card">

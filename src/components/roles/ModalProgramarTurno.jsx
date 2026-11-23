@@ -66,17 +66,17 @@ export default function ModalProgramarTurno({ vigilantes, puestos, asignadoPor =
         .turno-modal label { font-size: .78rem; font-weight: 600; color: #94a3b8; margin-bottom: 4px; }
         .turno-modal .form-control, .turno-modal .form-select { background: #1e293b; border: 1px solid rgba(255,255,255,.12); color: #e2e8f0; color-scheme: dark; }
         .turno-modal .form-control::placeholder { color: #64748b; }
-        .turno-modal .form-control:focus, .turno-modal .form-select:focus { background: #1e293b; color: #fff; border-color: #38bdf8; box-shadow: 0 0 0 .2rem rgba(56,189,248,.2); }
+        .turno-modal .form-control:focus, .turno-modal .form-select:focus { background: #1e293b; color: #fff; border-color: var(--acc, #38bdf8); box-shadow: 0 0 0 .2rem rgba(var(--acc-rgb, 56, 189, 248), .2); }
         .turno-modal select option { background: #1e293b; color: #e2e8f0; }
         .turno-search { position: relative; }
         .turno-search .bi-search { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; pointer-events: none; }
         .turno-search input { padding-left: 36px; }
         .turno-lista { position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: #1e293b; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; max-height: 220px; overflow-y: auto; z-index: 5; box-shadow: 0 10px 25px rgba(0,0,0,.4); }
         .turno-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; }
-        .turno-item:hover { background: rgba(56,189,248,.14); }
-        .turno-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg,#38bdf8,#6366f1); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .turno-item:hover { background: rgba(var(--acc-rgb, 56, 189, 248), .14); }
+        .turno-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--acc-btn, #38bdf8), var(--acc-2, #6366f1)); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .turno-vacio { padding: 12px; color: #94a3b8; font-size: .85rem; text-align: center; }
-        .turno-chip { display: flex; align-items: center; gap: 10px; background: rgba(56,189,248,.12); border: 1px solid rgba(56,189,248,.35); border-radius: 10px; padding: 8px 12px; }
+        .turno-chip { display: flex; align-items: center; gap: 10px; background: rgba(var(--acc-rgb, 56, 189, 248), .12); border: 1px solid rgba(var(--acc-rgb, 56, 189, 248), .35); border-radius: 10px; padding: 8px 12px; }
       `}</style>
 
       <form className="turno-modal" onSubmit={guardar}>

@@ -8,7 +8,17 @@ import SupervisorAdvertencias from './SupervisorAdvertencias'
 import SupervisorActivos from './SupervisorActivos'
 import SupervisorObjetosPerdidos from './SupervisorObjetosPerdidos'
 import SupervisorPedidos from './SupervisorPedidos'
+import SupervisorVehiculos from './SupervisorVehiculos'
 
+// Estado de cada turno (lo avanzan el vigilante y el administrador)
+const ESTADO_TURNO = {
+  programado: { texto: 'Programado', clase: 'bg-primary' },
+  aceptado: { texto: 'En curso', clase: 'bg-info text-dark' },
+  terminado: { texto: 'Terminado', clase: 'bg-success' },
+  cerrado: { texto: 'Cerrado', clase: 'bg-secondary' }
+}
+
+// Lista por defecto: se usa solo si el administrador aún no ha creado puestos
 const PUESTOS = ['Portería principal', 'Portería secundaria', 'Recepción', 'Parqueadero', 'Torre residencial', 'Zona social', 'Piscina', 'Ronda perimetral']
 
 const normalizar = (valor) => String(valor || '').trim().toLowerCase()
@@ -81,6 +91,7 @@ export default function SupervisorPanel({ seccionActiva, usuario }) {
   const [enviandoMensaje, setEnviandoMensaje] = useState(false)
 
   const [turnos, setTurnos] = useState([])
+  const [puestosDisponibles, setPuestosDisponibles] = useState(PUESTOS)
   const [vigilantes, setVigilantes] = useState([])
   const [mostrarTurno, setMostrarTurno] = useState(false)
 
@@ -110,6 +121,13 @@ export default function SupervisorPanel({ seccionActiva, usuario }) {
     setVigilantes(data || [])
   }, [])
 
+  // Puestos activos que creó el administrador (si la tabla no existe o está vacía, se usa la lista por defecto)
+  const cargarPuestos = useCallback(async () => {
+    const { data, error } = await supabase.from('puestos').select('nombre, estado').order('nombre', { ascending: true })
+    const lista = (data || []).filter(x => x.nombre && x.estado !== 'inactivo').map(x => x.nombre)
+    setPuestosDisponibles(!error && lista.length ? lista : PUESTOS)
+  }, [])
+
   const cargar = useCallback(async () => {
     setCargando(true)
     try {
@@ -119,7 +137,8 @@ export default function SupervisorPanel({ seccionActiva, usuario }) {
         cargarNovedades(),
         cargarMensajes(),
         cargarTurnos(),
-        cargarVigilantes()
+        cargarVigilantes(),
+        cargarPuestos()
       ])
       setRondas(r.data || [])
       setAsistencias(a.data || [])
@@ -128,7 +147,7 @@ export default function SupervisorPanel({ seccionActiva, usuario }) {
     } finally {
       setCargando(false)
     }
-  }, [cargarNovedades, cargarMensajes, cargarTurnos, cargarVigilantes])
+  }, [cargarNovedades, cargarMensajes, cargarTurnos, cargarVigilantes, cargarPuestos])
 
   useEffect(() => { cargar() }, [cargar])
 
@@ -253,13 +272,17 @@ export default function SupervisorPanel({ seccionActiva, usuario }) {
   ], [])
 
   const eliminarTurno = async (turno) => {
+    if (turno.estado && turno.estado !== 'programado') {
+      return Swal.fire('No se puede eliminar', 'Este turno ya fue aceptado por el vigilante o está cerrado; queda como registro. Solo se pueden eliminar turnos que siguen programados.', 'info')
+    }
     const r = await Swal.fire({
       title: '¿Eliminar turno?', text: `Se quitará el turno de ${turno.vigilante}.`, icon: 'warning',
       showCancelButton: true, confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar'
     })
     if (!r.isConfirmed) return
-    const { error } = await supabase.from('turnos').delete().eq('id', turno.id)
+    const { data, error } = await supabase.from('turnos').delete().eq('id', turno.id).select()
     if (error) return Swal.fire('Error', error.message, 'error')
+    if (!data || data.length === 0) return Swal.fire('No se pudo eliminar', 'La base de datos no permitió borrar el turno (revisa los permisos de la tabla turnos en Supabase).', 'error')
     setTurnos(prev => prev.filter(t => t.id !== turno.id))
   }
 
@@ -270,6 +293,10 @@ export default function SupervisorPanel({ seccionActiva, usuario }) {
     { name: 'Puesto', selector: row => row.puesto || '—', sortable: true, grow: 1.2 },
     { name: 'Instrucciones', selector: row => row.observaciones || '—', grow: 1.5, wrap: true },
     { name: 'Asignado por', selector: row => row.supervisor || '—', grow: 1 },
+    {
+      name: 'Estado', grow: 0.8,
+      cell: row => { const e = ESTADO_TURNO[row.estado || 'programado'] || ESTADO_TURNO.programado; return <span className={`badge ${e.clase}`}>{e.texto}</span> }
+    },
     {
       name: 'Acciones', grow: 0.6,
       cell: row => <button className="btn btn-outline-danger btn-sm" onClick={() => eliminarTurno(row)} title="Eliminar turno">🗑️</button>
@@ -337,6 +364,7 @@ export default function SupervisorPanel({ seccionActiva, usuario }) {
             {seccionActiva === 'activos' && 'Gestión de activos'}
             {seccionActiva === 'objetos' && 'Objetos perdidos'}
             {seccionActiva === 'pedidos' && 'Pedidos y deliveries'}
+            {seccionActiva === 'vehiculos' && 'Vehículos de visitantes'}
 
           </h1>
           <p className="text-muted mb-0">
@@ -349,6 +377,7 @@ export default function SupervisorPanel({ seccionActiva, usuario }) {
             {seccionActiva === 'activos' && 'Inventario de herramientas de trabajo y su asignación a cada vigilante.'}
             {seccionActiva === 'objetos' && 'Objetos que los vigilantes han registrado en custodia.'}
             {seccionActiva === 'pedidos' && 'Pedidos y entregas recibidos en portería por cada vigilante.'}
+            {seccionActiva === 'vehiculos' && 'Registra el ingreso y la salida de vehículos de visitantes y consulta los parqueaderos disponibles.'}
           </p>
         </div>
 
@@ -471,7 +500,7 @@ export default function SupervisorPanel({ seccionActiva, usuario }) {
                 <span className="eyebrow">PROGRAMACIÓN</span>
                 <h3 className="h5 mb-0">Turnos de los vigilantes</h3>
               </div>
-              <button className="btn btn-primary" onClick={async () => { await cargarVigilantes(); setMostrarTurno(true) }}>
+              <button className="btn btn-primary" onClick={async () => { await Promise.all([cargarVigilantes(), cargarPuestos()]); setMostrarTurno(true) }}>
                 + Programar turno
               </button>
             </div>
@@ -543,11 +572,12 @@ export default function SupervisorPanel({ seccionActiva, usuario }) {
       {seccionActiva === 'activos' && <SupervisorActivos vigilantes={vigilantes} usuario={usuario} />}
       {seccionActiva === 'objetos' && <SupervisorObjetosPerdidos vigilantes={vigilantes} />}
       {seccionActiva === 'pedidos' && <SupervisorPedidos vigilantes={vigilantes} />}
+      {seccionActiva === 'vehiculos' && <SupervisorVehiculos usuario={usuario} vigilantes={vigilantes} />}
 
       {mostrarTurno && (
         <ModalProgramarTurno
           vigilantes={vigilantes}
-          puestos={PUESTOS}
+          puestos={puestosDisponibles}
           asignadoPor={usuario?.nombre || 'Supervisor'}
           onCerrar={() => setMostrarTurno(false)}
           onGuardado={cargarTurnos}

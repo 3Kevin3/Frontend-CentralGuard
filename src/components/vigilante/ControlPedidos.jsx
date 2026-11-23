@@ -19,7 +19,16 @@ export default function ControlPedidos({ usuario }) {
     if (!error) setPedidos(data || [])
   }
 
-  useEffect(() => { cargarPedidos() }, [idUsuario])
+  useEffect(() => {
+    if (!idUsuario) return
+    cargarPedidos()
+    // Se actualiza solo cuando el supervisor elimina o cambia un pedido
+    const canal = supabase.channel(`vig-pedidos-${idUsuario}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => cargarPedidos())
+      .subscribe()
+    const t = setInterval(cargarPedidos, 15000)
+    return () => { clearInterval(t); supabase.removeChannel(canal) }
+  }, [idUsuario])
 
   const handleSubmit = async (e) => {
     e.preventDefault()

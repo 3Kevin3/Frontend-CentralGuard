@@ -16,7 +16,7 @@
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: #38bdf8;
+  color: var(--acc, #38bdf8);
   text-transform: uppercase;
 }
 
@@ -65,7 +65,7 @@
 }
 .stat-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(56, 189, 248, 0.35);
+  border-color: rgba(var(--acc-rgb, 56, 189, 248), 0.35);
 }
 .stat-card:nth-child(1) { animation-delay: 0.05s; }
 .stat-card:nth-child(2) { animation-delay: 0.12s; }
@@ -83,7 +83,7 @@
   font-weight: bold;
 }
 
-.stat-primary { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+.stat-primary { background: rgba(var(--acc-rgb, 56, 189, 248), 0.15); color: var(--acc, #38bdf8); }
 .stat-success { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
 .stat-warning { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
 .stat-danger  { background: rgba(248, 113, 113, 0.15); color: #f87171; }
@@ -110,7 +110,7 @@
 .priority-baja  { background-color: rgba(255, 255, 255, 0.08); color: #cbd5e1; }
 
 .status-pending  { background-color: rgba(251, 191, 36, 0.15); color: #fbbf24; }
-.status-process  { background-color: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+.status-process  { background-color: rgba(var(--acc-rgb, 56, 189, 248), 0.15); color: var(--acc, #38bdf8); }
 .status-resolved { background-color: rgba(74, 222, 128, 0.15); color: #4ade80; }
 
 .chat-card {
@@ -144,7 +144,7 @@
 .chat-avatar {
   width: 36px;
   height: 36px;
-  background: #38bdf8;
+  background: var(--acc, #38bdf8);
   color: #0f172a;
   border-radius: 50%;
   display: flex;
@@ -175,7 +175,7 @@
 }
 
 .message-own .message-bubble {
-  background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+  background: linear-gradient(135deg, var(--acc-btn, #0ea5e9), var(--acc, #38bdf8));
   color: #ffffff;
   border-bottom-right-radius: 2px;
 }
